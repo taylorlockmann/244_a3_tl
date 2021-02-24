@@ -1,0 +1,94 @@
+---
+title: "244 Assignment 3, Task 1"
+author: "Taylor Lockmann"
+date: "2/23/2021"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include = FALSE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(sf)
+library(tmap)
+library(gstat)
+library(stars)
+```
+
+```{r}
+
+# Read in and prep the data
+
+
+# Read in the oil spill data layer: 
+oil_spill_data <- read_sf(here("data", "Oil_Spill_Incident_Tracking_%5Bds394%5D-shp"), layer = "Oil_Spill_Incident_Tracking_%5Bds394%5D") %>% 
+  clean_names()
+
+# Check projection
+# st_crs(oil_spill_data) (uncomment to run the code)
+# We see it is WGS 84
+
+# Read in county data (using same data from week 6 code-along)
+ca_counties <- read_sf(here("data", "ca_counties"), layer = "CA_Counties_TIGER2016") %>% 
+  clean_names() %>% 
+  select(name)
+
+# Check counties projection
+# st_crs(ca_counties) (uncomment to run the code)
+# Also WGS84. Great! No re-projecting
+```
+
+## 1) Exploratory map of oil spill events
+
+```{r, message=FALSE}
+# Create an interactive map in tmap showing the location of oil spill events included in the data.
+
+tmap_mode("view")
+
+tm_shape(oil_spill_data)+
+  tm_dots()
+```
+
+
+
+**Figure 1:** Interactive map of all oil spills in California in 2008. Interact with the map directly by zooming in and out, changing the basemap (upper left corner) and clicking on points to see individual oil spill information.
+
+
+
+
+
+## 2) Chloropleth map of inland oil spills
+
+```{r}
+# Filter oil spill data to include only inland spills.
+
+inland_spills <- oil_spill_data %>% 
+  filter(inlandmari == "Inland")
+
+# Join counties layer and inland_spills layer
+county_spills <- ca_counties %>% 
+  st_join(inland_spills)
+
+# Count the number of spills per county in our new subset.
+spills_per_county <- county_spills %>% 
+  count(name)
+
+# Make a plot with our spills_per_county layer
+ggplot(data = spills_per_county)+
+  geom_sf(aes(fill = n), color = "white", size = 0.1)+
+  scale_fill_gradientn(colors = c("lightgray", "red", "darkmagenta"))+
+  theme_minimal()+
+  labs(fill = "Number of oil spills in 2008")
+
+```
+
+**Figure 2:** Chloropleth map of number of oil spills per county. Darker colors represent higher numbers of inland oil spills in 2008. 
+
+
+
+Sources: California Department of Fish and Wildlife Oil Spill Incident Tracking 2008
+
+##### End task 1
